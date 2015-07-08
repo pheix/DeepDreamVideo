@@ -1,25 +1,28 @@
 #!/bin/bash
-if [ $# -ne 2 ]; then
+
+MOVIEFILE=$1
+IFS=. read MOVIENAME MOVIEEXT <<< "${MOVIEFILE}"
+
+MOVIEPATH=./movie/${MOVIENAME}.mp4
+
+if [ $# -eq 0 ]; then
     echo "please provide the directory of the processed frames"
-    echo "./3_frames2movie.sh [frames_directory] [original_video_with_sound]"
+    echo "./3_frames2movie original-movie.mp4 [directory]"
     exit 1
 fi
 
-ffmpeg -framerate 25 -i $1/%4d.jpg -c:v libx264 -r 30 -pix_fmt yuv420p tmp.mp4
+ffmpeg -framerate 25 -i $2/%4d.jpg -c:v libx264 -r 30 -pix_fmt yuv420p tmp.mp4
 
-ffmpeg -i $2 original.mp3
-ffmpeg -i original.mp3 music.wav
+ffmpeg -i ${MOVIEPATH} _music_track.mp3
+ffmpeg -i _music_track.mp3 _music_track.wav
 
 secs=$(ffprobe -i tmp.mp4 -show_entries format=duration -v quiet -of csv="p=0")
-ffmpeg -i music.wav -ss 0 -t $secs musicshort.wav
-ffmpeg -i musicshort.wav -i tmp.mp4 -strict -2 $1.mp4
 
-echo 'Removing temp files'
-rm original.mp3
-echo "original.mp3 removed"
-rm music.wav
-echo "music.wav removed"
-rm musicshort.wav
-echo "musicshort.wav removed"
+ffmpeg -i _music_track.wav -ss 0 -t $secs _music_track.short.wav
+ffmpeg -i _music_track.short.wav -i tmp.mp4 -strict -2 ${MOVIENAME}.inception.mp4
 rm tmp.mp4
-echo "tmp.mp4 removed"
+rm _music_track.mp3
+rm _music_track.wav
+rm _music_track.short.wav
+
+echo -e "+++++++++++\nCurrent movie duration in seonds: ${secs}\n+++++++++++\n"
